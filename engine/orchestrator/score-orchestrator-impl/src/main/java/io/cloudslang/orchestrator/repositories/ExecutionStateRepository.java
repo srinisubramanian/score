@@ -39,6 +39,8 @@ public interface ExecutionStateRepository extends JpaRepository<ExecutionState, 
 
     public ExecutionState findByExecutionIdAndBranchIdAndStatusIn(Long executionId, String branchId, List<ExecutionStatus> statuses);
 
+    public List<ExecutionState> findByStatusInAndUpdateTimeLessThanEqual(List<ExecutionStatus> statuses, Long time);
+
     @Query("select executionState.executionId from ExecutionState executionState where executionState.status in :statuses")
     public List<Long> findExecutionIdByStatuses(@Param("statuses") List<ExecutionStatus> statuses);
 

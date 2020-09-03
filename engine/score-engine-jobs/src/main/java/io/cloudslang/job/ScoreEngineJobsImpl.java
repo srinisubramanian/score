@@ -18,10 +18,14 @@ package io.cloudslang.job;
 
 import io.cloudslang.engine.queue.services.LargeMessagesMonitorService;
 import io.cloudslang.engine.queue.services.cleaner.QueueCleanerService;
+import com.google.common.collect.Iterables;
 import io.cloudslang.engine.queue.services.recovery.ExecutionRecoveryService;
 import io.cloudslang.engine.versioning.services.VersionService;
+import io.cloudslang.orchestrator.services.FinishedExecutionStateCleanerService;
 import io.cloudslang.orchestrator.services.SplitJoinService;
 import io.cloudslang.orchestrator.services.SuspendedExecutionCleanerService;
+import java.util.Iterator;
+import java.util.List;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +60,9 @@ public class ScoreEngineJobsImpl implements ScoreEngineJobs {
     @Autowired
     private LargeMessagesMonitorService largeMessagesMonitorService;
 
+    @Autowired
+    private FinishedExecutionStateCleanerService finishedExecutionStateCleanerService;
+
     private final Logger logger = Logger.getLogger(getClass());
 
     final private int QUEUE_BULK_SIZE = 500;
@@ -74,19 +81,14 @@ public class ScoreEngineJobsImpl implements ScoreEngineJobs {
             if (logger.isDebugEnabled())
                 logger.debug("Will clean from queue the next Exec state ids amount:" + ids.size());
 
-            Set<Long> execIds = new HashSet<>();
+            Iterable<List<Long>> lists = Iterables.partition(ids, 1000);
+            Iterator itr = lists.iterator();
 
-            for (Long id : ids) {
-                execIds.add(id);
-                if (execIds.size() >= QUEUE_BULK_SIZE) {
-                    queueCleanerService.cleanFinishedSteps(execIds);
-                    execIds.clear();
-                }
+            while(itr.hasNext()) {
+                List itrIds = (List) itr.next();
+                queueCleanerService.cleanFinishedSteps(new HashSet<>(itrIds));
             }
 
-            if (execIds.size() > 0) {
-                queueCleanerService.cleanFinishedSteps(execIds);
-            }
         } catch (Exception e) {
             logger.error("Can't run queue cleaner job.", e);
         }
@@ -168,6 +170,19 @@ public class ScoreEngineJobsImpl implements ScoreEngineJobs {
         }
 
         largeMessagesMonitorService.monitor();
+    }
+
+    @Override
+    public void cleanFinishedExecutionState() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("CleanFinishedExecutionState woke up at " + new Date());
+        }
+
+        try {
+            finishedExecutionStateCleanerService.cleanFinishedExecutionState();
+        } catch (Exception e) {
+            logger.error("Can't run finished execution state cleaner job.", e);
+        }
     }
 
     @Override

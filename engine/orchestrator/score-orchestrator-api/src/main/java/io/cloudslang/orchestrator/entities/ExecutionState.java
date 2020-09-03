@@ -19,6 +19,7 @@ package io.cloudslang.orchestrator.entities;
 import io.cloudslang.score.facade.execution.ExecutionStatus;
 import io.cloudslang.score.facade.execution.ExecutionSummary;
 import io.cloudslang.engine.data.AbstractIdentifiable;
+import java.util.Date;
 import org.apache.commons.lang.builder.EqualsBuilder;
 
 import javax.persistence.Basic;
@@ -58,6 +59,9 @@ public class ExecutionState extends AbstractIdentifiable {
     @Basic(fetch = FetchType.LAZY)
     private byte[] executionObject;
 
+    @Column(name = "UPDATE_TIME")
+    private Long updateTime;
+
     public Long getExecutionId() {
         return executionId;
     }
@@ -88,6 +92,14 @@ public class ExecutionState extends AbstractIdentifiable {
 
     public void setExecutionObject(byte[] executionObj) {
         this.executionObject = executionObj;
+    }
+
+    public Long getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Long updateTime) {
+        this.updateTime = updateTime;
     }
 
     @Override
